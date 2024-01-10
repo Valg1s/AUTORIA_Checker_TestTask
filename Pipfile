@@ -10,6 +10,7 @@ cloudscraper = "*"
 cfscrape = "*"
 aiogram = "*"
 python-telegram-bot = "*"
+sqlalchemy = "*"
 
 [dev-packages]
 

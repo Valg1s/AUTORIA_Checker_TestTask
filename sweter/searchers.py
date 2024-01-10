@@ -2,7 +2,8 @@ import cloudscraper
 import requests
 from bs4 import BeautifulSoup
 
-from telegram_bot import send_info_about_car
+from sweter.telegram_bot import send_info_about_car, change_message
+from sweter.models import CarInfo, session
 
 AUTORIA_SEARCH_URL = "https://auto.ria.com/search/"
 BID_URL = "https://carsbidshistory.com"
@@ -46,8 +47,8 @@ def find_cars_on_autoria():
             "link": link['href'],
             "car_name": link.text.strip(),
             "announce_id": item["data-advertisement-id"],
-            "car_price_usd": price_usd.text,
-            "car_price_uah": price_uah.text,
+            "car_price_usd": price_usd.text.strip(),
+            "car_price_uah": price_uah.text.strip(),
             "car_race": car_info[0].text.strip(),
             "car_location": car_info[1].text.strip(),
             "vin_code": vin_code.text.strip(),
@@ -78,13 +79,70 @@ def find_link_on_auction(vin_code: str) -> str:
     return BID_URL + link
 
 
-if __name__ == "__main__":
+def get_photo_from_autoria(link):
+    html = requests.get(link).text
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    pictures_box = soup.find("div", {"id": "photosBlock"}).find("div", {"class": "wrapper"})
+
+    pictures = pictures_box.find_all("img", src=True)[:6]
+
+    result = []
+
+    for picture in pictures:
+        result.append(picture["src"])
+
+    return result
+
+
+def get_photo_from_bid(link):
+    html = requests.get(link).text
+
+    soup = BeautifulSoup(html, "html.parser")
+
+    pictures = soup.find("div", {"id": "slider-thumbs0"}).find_all("img", src=True)[:10]
+
+    result = []
+
+    for picture in pictures:
+        result.append(picture["src"])
+
+    return result
+
+
+async def run_searcher():
     found_cars = find_cars_on_autoria()
 
-    for car in found_cars:
-        bid_link = find_link_on_auction(car["vin_code"])
+    counter = 0
+    for car_info in found_cars * 2:
+        car = session.query(CarInfo).filter_by(announce_id=car_info['announce_id']).first()
+        if car:
+            if counter == 1:
+                car_info['car_price_usd'] = "6500"
+                car_info['car_price_uah'] = "260 000"
+            result = car.update(car_info)
 
-        car["bid_link"] = bid_link
+            session.commit()
 
-        send_info_about_car(car)
+            if result:
+                await change_message(car)
+
+            counter += 1
+            continue
+
+        bid_link = find_link_on_auction(car_info["vin_code"])
+
+        car_info["bid_link"] = bid_link
+
+        autoria_images = get_photo_from_autoria(car_info['link'])
+        bid_images = get_photo_from_bid(bid_link)
+
+        new_car = CarInfo.create_from_dict(car_info)
+
+        session.add(new_car)
+        session.commit()
+
+        await send_info_about_car(car=new_car, autoria_images=autoria_images, bid_images=bid_images)
+
 
