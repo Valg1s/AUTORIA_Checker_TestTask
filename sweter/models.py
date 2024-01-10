@@ -53,8 +53,4 @@ engine = create_engine('sqlite:///car_info.db')
 Session = sessionmaker(bind=engine)
 session = Session()
 
-if __name__ == "__main__":
-    engine = create_engine('sqlite:///car_info.db')  # замените 'sqlite:///car_info.db' на ваше подключение к базе данных
-
-    Base.metadata.create_all(engine)
 

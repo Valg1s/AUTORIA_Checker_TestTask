@@ -1,11 +1,16 @@
 import warnings
+import os
 
 import telegram
+import dotenv
+
+dotenv.load_dotenv()
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
-bot_token = "6839765662:AAFx6GS-iK9o6prGM3g8YQV3T4kj1rdm6WI"
-chat_id = "-1001630405073"
+bot_token = os.getenv("bot_token")
+chat_id = os.getenv("chat_id")
 
 bot = telegram.Bot(bot_token)
 

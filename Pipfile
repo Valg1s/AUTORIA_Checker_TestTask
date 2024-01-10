@@ -7,10 +7,10 @@ name = "pypi"
 requests = "*"
 beautifulsoup4 = "*"
 cloudscraper = "*"
-cfscrape = "*"
-aiogram = "*"
 python-telegram-bot = "*"
 sqlalchemy = "*"
+schedule = "*"
+python-dotenv = "*"
 
 [dev-packages]
 
